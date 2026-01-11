@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}关于 - TiCNet 肺结节检测系统{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <h1 class="display-5 mb-4">
+                    <i class="fas fa-lungs text-primary me-3"></i>
+                    {{ model_info.name }}
+                </h1>
+                <p class="lead">{{ model_info.description }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>系统信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>系统名称:</strong></td>
+                        <td>{{ model_info.name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>版本:</strong></td>
+                        <td>{{ model_info.version }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>作者:</strong></td>
+                        <td>{{ model_info.authors }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>论文:</strong></td>
+                        <td>{{ model_info.paper }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>技术特性
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>Transformer + CNN 混合架构</li>
+                    <li><i class="fas fa-check text-success me-2"></i>3D医学图像处理</li>
+                    <li><i class="fas fa-check text-success me-2"></i>高精度结节检测</li>
+                    <li><i class="fas fa-check text-success me-2"></i>实时可视化展示</li>
+                    <li><i class="fas fa-check text-success me-2"></i>多格式文件支持</li>
+                    <li><i class="fas fa-check text-success me-2"></i>批量检测处理</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>研究背景
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    TiCNet (Transformer in Convolutional Neural Network) 是一个专门用于CT图像肺结节检测的深度学习模型。
+                    该系统结合了Transformer和卷积神经网络的优势，在LUNA16数据集上进行了充分验证。
+                </p>
+                <p>
+                    系统采用了先进的两阶段检测方法：首先使用RPN (Region Proposal Network) 生成候选区域，
+                    然后通过RCNN进行精确分类和定位。Transformer模块的引入进一步提升了模型的全局上下文理解能力。
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>性能指标
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>FP/Scan</th>
+                                <th>敏感度 (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>0.125</td><td>79.55</td></tr>
+                            <tr><td>0.25</td><td>85.42</td></tr>
+                            <tr><td>0.5</td><td>89.09</td></tr>
+                            <tr><td>1</td><td>92.22</td></tr>
+                            <tr><td>2</td><td>95.37</td></tr>
+                            <tr><td>4</td><td>96.52</td></tr>
+                            <tr><td>8</td><td>96.95</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted small mt-2">
+                    基于LUNA16数据集10折交叉验证结果
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>使用说明
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-shield-alt me-1"></i>重要声明</h6>
+                    <ul class="mb-0 small">
+                        <li>本系统仅供科研和教育用途</li>
+                        <li>不能作为最终诊断依据</li>
+                        <li>需要专业医生进行临床判断</li>
+                        <li>检测结果仅供参考</li>
+                    </ul>
+                </div>
+                
+                <h6>数据安全</h6>
+                <ul class="small">
+                    <li>上传的图像仅用于检测分析</li>
+                    <li>不会保存或泄露患者隐私信息</li>
+                    <li>建议在使用前对敏感数据进行脱敏处理</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-book me-2"></i>参考文献
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light">
+                    <p class="mb-2"><strong>主要论文:</strong></p>
+                    <blockquote class="blockquote">
+                        <p class="mb-0">{{ model_info.paper }}</p>
+                        <footer class="blockquote-footer mt-2">{{ model_info.authors }}</footer>
+                    </blockquote>
+                </div>
+                
+                <p><strong>相关技术参考:</strong></p>
+                <ul>
+                    <li>NoduleNet: Decoupled False Positive Reduction for Pulmonary Nodule Detection and Segmentation</li>
+                    <li>DETR: End-to-End Object Detection with Transformers</li>
+                    <li>LUNA16 Challenge: https://luna16.grand-challenge.org/</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

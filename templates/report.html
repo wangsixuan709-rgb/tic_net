@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>肺结节检测分析报告</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Microsoft YaHei', 'SimHei', Arial, sans-serif;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .report-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .report-header {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .report-header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        .report-header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+        .report-body {
+            padding: 40px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            border-left: 5px solid #4a90e2;
+            padding-left: 15px;
+            margin-bottom: 20px;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        .info-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+            width: 150px;
+            flex-shrink: 0;
+        }
+        .info-value {
+            color: #212529;
+            flex: 1;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            border: 2px solid #4a90e2;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(74, 144, 226, 0.3);
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4a90e2;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .ai-analysis-section {
+            background: linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%);
+            border: 2px solid #4a90e2;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .ai-badge {
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .ai-analysis-content {
+            margin-top: 20px;
+            line-height: 1.8;
+            color: #2c3e50;
+        }
+        .ai-analysis-content h4 {
+            color: #4a90e2;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .ai-loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #4a90e2;
+        }
+        .detection-table {
+            width: 100%;
+            margin-top: 15px;
+        }
+        .detection-table th {
+            background: #4a90e2;
+            color: white;
+            padding: 12px;
+            text-align: center;
+        }
+        .detection-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .detection-table tr:hover {
+            background: #f8f9fa;
+        }
+        .confidence-badge {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .confidence-high {
+            background: #d4edda;
+            color: #155724;
+        }
+        .confidence-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .confidence-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .visualization-section {
+            margin-top: 30px;
+        }
+        .viz-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .action-buttons {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .btn-custom {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            margin: 0 10px;
+            transition: all 0.3s;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            border: none;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(74, 144, 226, 0.4);
+        }
+        .disclaimer {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 30px;
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            .action-buttons {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <!-- 报告头部 -->
+        <div class="report-header">
+            <h1><i class="bi bi-file-medical"></i> 肺结节检测分析报告</h1>
+            <div class="subtitle">TiCNet AI辅助诊断系统</div>
+        </div>
+
+        <div class="report-body">
+            <!-- 基本信息 -->
+            <div class="section">
+                <div class="section-title">一、检测基本信息</div>
+                <div class="info-card">
+                    <div class="info-row">
+                        <div class="info-label">文件名:</div>
+                        <div class="info-value">{{ file_info.filename }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">检测时间:</div>
+                        <div class="info-value">{{ results.timestamp }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">任务ID:</div>
+                        <div class="info-value">{{ results.task_id }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">图像尺寸:</div>
+                        <div class="info-value">{{ results.get('meta_info', {}).get('original_shape', 'N/A') }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">图像间距:</div>
+                        <div class="info-value">{{ results.get('meta_info', {}).get('original_spacing', 'N/A') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 检测结果统计 -->
+            <div class="section">
+                <div class="section-title">二、检测结果统计</div>
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stats.total_detections }}</div>
+                        <div class="stat-label">检测结节总数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stats.high_confidence_count }}</div>
+                        <div class="stat-label">高置信度 (≥0.7)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stats.medium_confidence_count }}</div>
+                        <div class="stat-label">中等置信度 (0.4-0.7)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ "%.3f"|format(stats.average_confidence) }}</div>
+                        <div class="stat-label">平均置信度</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ "%.1f"|format(stats.average_volume) }}</div>
+                        <div class="stat-label">平均体积 (mm³)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI智能分析 -->
+            <div class="section">
+                <div class="section-title">三、AI智能分析</div>
+                <div class="ai-analysis-section">
+                    <div class="ai-badge">
+                        <i class="bi bi-robot"></i> DeepSeek AI 分析
+                    </div>
+                    <div id="ai-analysis-content" class="ai-analysis-content">
+                        <div class="ai-loading">
+                            <div class="spinner-border" role="status"></div>
+                            <p class="mt-3">正在生成AI分析报告，请稍候...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 详细检测结果 -->
+            {% if detections %}
+            <div class="section">
+                <div class="section-title">四、详细检测结果</div>
+                <div style="overflow-x: auto;">
+                    <table class="detection-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>置信度</th>
+                                <th>位置 (X, Y, Z)</th>
+                                <th>尺寸 (mm)</th>
+                                <th>体积 (mm³)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for det in detections %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    {% if det.confidence >= 0.7 %}
+                                    <span class="confidence-badge confidence-high">{{ "%.3f"|format(det.confidence) }}</span>
+                                    {% elif det.confidence >= 0.4 %}
+                                    <span class="confidence-badge confidence-medium">{{ "%.3f"|format(det.confidence) }}</span>
+                                    {% else %}
+                                    <span class="confidence-badge confidence-low">{{ "%.3f"|format(det.confidence) }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    ({{ "%.1f"|format((det.bbox[0] + det.bbox[3])/2) }}, 
+                                     {{ "%.1f"|format((det.bbox[1] + det.bbox[4])/2) }}, 
+                                     {{ "%.1f"|format((det.bbox[2] + det.bbox[5])/2) }})
+                                </td>
+                                <td>
+                                    {{ "%.1f"|format(det.bbox[3] - det.bbox[0]) }} × 
+                                    {{ "%.1f"|format(det.bbox[4] - det.bbox[1]) }} × 
+                                    {{ "%.1f"|format(det.bbox[5] - det.bbox[2]) }}
+                                </td>
+                                <td>{{ "%.1f"|format(det.volume) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 可视化结果 -->
+            <div class="section visualization-section">
+                <div class="section-title">五、可视化结果</div>
+                
+                {% if viz_files.summary %}
+                <div class="mb-4">
+                    <h5 class="mb-3"><i class="bi bi-grid-3x3"></i> 检测结果汇总</h5>
+                    <img src="{{ url_for('serve_visualization', filename=viz_files.summary) }}" 
+                         class="viz-image" alt="检测汇总">
+                </div>
+                {% endif %}
+
+                {% if viz_files.original_slices %}
+                <div class="mb-4">
+                    <h5 class="mb-3"><i class="bi bi-images"></i> 原始切片</h5>
+                    <img src="{{ url_for('serve_visualization', filename=viz_files.original_slices) }}" 
+                         class="viz-image" alt="原始切片">
+                </div>
+                {% endif %}
+
+                {% if viz_files.overlay %}
+                <div class="mb-4">
+                    <h5 class="mb-3"><i class="bi bi-bounding-box"></i> 检测框叠加</h5>
+                    <img src="{{ url_for('serve_visualization', filename=viz_files.overlay) }}" 
+                         class="viz-image" alt="检测框">
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 免责声明 -->
+            <div class="disclaimer">
+                <strong><i class="bi bi-exclamation-triangle-fill"></i> 重要提示：</strong>
+                本报告由TiCNet AI系统自动生成，仅供临床参考。最终诊断需要由专业医生结合患者病史、体征及其他检查综合判断。
+                请勿自行用药，如有疑问请及时咨询专业医生。
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button class="btn btn-custom btn-primary-custom" onclick="window.print()">
+                    <i class="bi bi-printer"></i> 打印报告
+                </button>
+                <a href="{{ url_for('history') }}" class="btn btn-custom btn-secondary">
+                    <i class="bi bi-arrow-left"></i> 返回历史记录
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-custom btn-success">
+                    <i class="bi bi-house"></i> 返回首页
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载后请求AI分析
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskId = '{{ results.task_id }}';
+            
+            // 发送AJAX请求获取AI分析
+            fetch(`/api/ai_analysis/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const contentDiv = document.getElementById('ai-analysis-content');
+                    
+                    if (data.success && data.analysis) {
+                        // 格式化AI分析文本
+                        let formattedText = formatAnalysisText(data.analysis);
+                        contentDiv.innerHTML = formattedText;
+                        
+                        // 添加AI模型信息
+                        if (data.ai_model) {
+                            const modelInfo = document.createElement('div');
+                            modelInfo.className = 'mt-4 p-2 text-muted small text-center';
+                            modelInfo.style.borderTop = '1px solid #dee2e6';
+                            modelInfo.innerHTML = `<i class="bi bi-cpu"></i> 分析模型: ${data.ai_model}`;
+                            contentDiv.appendChild(modelInfo);
+                        }
+                    } else {
+                        // 显示错误或降级分析
+                        contentDiv.innerHTML = formatAnalysisText(data.analysis || '分析生成失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('AI分析加载失败:', error);
+                    document.getElementById('ai-analysis-content').innerHTML = 
+                        '<div class="alert alert-warning">AI分析加载失败，请刷新页面重试</div>';
+                });
+        });
+
+        function formatAnalysisText(text) {
+            // 将文本格式化为HTML
+            let html = '';
+            const lines = text.split('\n');
+            let currentSection = '';
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                
+                // 处理【标题】格式
+                if (line.match(/^【.+】$/)) {
+                    if (currentSection) {
+                        html += '</div>';
+                    }
+                    html += `<h4><i class="bi bi-chevron-right"></i> ${line}</h4>`;
+                    html += '<div class="mb-3">';
+                    currentSection = line;
+                }
+                // 处理数字列表
+                else if (line.match(/^\d+\.\s+/)) {
+                    html += `<div class="ms-3 mb-2"><i class="bi bi-check-circle text-success"></i> ${line}</div>`;
+                }
+                // 普通段落
+                else {
+                    html += `<p class="mb-2">${escapeHtml(line)}</p>`;
+                }
+            }
+            
+            if (currentSection) {
+                html += '</div>';
+            }
+            
+            return html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
+
+

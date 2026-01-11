@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - TiCNet 肺结节检测系统{% endblock %}
+
+{% block content %}
+<!-- 欢迎区域 -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-lungs text-primary me-3"></i>
+                    TiCNet 肺结节检测系统
+                </h1>
+                <p class="lead mb-4">
+                    基于Transformer和卷积神经网络的先进肺结节检测技术
+                    <br>
+                    为医学影像诊断提供智能辅助支持
+                </p>
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <div class="stat-number">95.37%</div>
+                                    <div class="stat-label">平均检测精度</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <div class="stat-number">LUNA16</div>
+                                    <div class="stat-label">数据集验证</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <div class="stat-number">3D</div>
+                                    <div class="stat-label">立体检测</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 文件上传区域 -->
+<div class="row mb-5">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-upload me-2"></i>上传CT图像进行检测
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="fileInput" class="form-label fw-bold">选择CT图像文件</label>
+                        <input type="file" class="form-control form-control-lg" id="fileInput" 
+                               accept=".mhd,.raw,.nii,.nii.gz,.nrrd,.nhdr,.dcm,.npy,.png,.jpg,.jpeg" multiple>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            支持格式：NRRD (.nrrd, .nhdr), MetaImage (.mhd+.raw), NIfTI (.nii, .nii.gz), DICOM (.dcm), NumPy (.npy)
+                            <br>
+                            <i class="fas fa-exclamation-triangle text-danger me-1"></i>
+                            <strong>重要：</strong>MHD格式需同时上传 .mhd 和 .raw 两个文件
+                            <br>
+                            <i class="fas fa-lightbulb me-1"></i>
+                            <strong>推荐：</strong>使用NRRD格式文件，可完整保留空间信息并显示真实标注框
+                            <br>
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            文件大小限制：500MB
+                        </div>
+                    </div>
+                    
+                    <!-- 文件预览区域 -->
+                    <div id="filePreview" class="mb-4" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-file-medical me-2"></i>文件信息</h6>
+                            <div id="fileInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-outline-primary btn-lg w-100" id="previewBtn">
+                                <i class="fas fa-eye me-2"></i>预览图像
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="uploadBtn">
+                                <i class="fas fa-brain me-2"></i>开始智能检测
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- 上传进度 -->
+                <div id="uploadProgress" class="mt-4" style="display: none;">
+                    <div class="text-center mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">处理中...</span>
+                        </div>
+                        <h5 class="mt-3">正在处理您的CT图像...</h5>
+                        <p class="text-muted">这可能需要几分钟时间，请耐心等待</p>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <!-- 图像预览区域 -->
+                <div id="imagePreviewSection" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-images me-2"></i>图像预览
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="imagePreviewContainer" class="text-center">
+                                <!-- 预览图像将显示在这里 -->
+                            </div>
+                            <div class="d-grid mt-3">
+                                <button type="button" class="btn btn-success btn-lg" id="continueDetectionBtn">
+                                    <i class="fas fa-brain me-2"></i>继续进行智能检测
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统特性介绍 -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h3 class="text-center mb-4">系统特性</h3>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-eye fa-3x text-primary"></i>
+                        </div>
+                        <h5>高精度检测</h5>
+                        <p class="text-muted">
+                            结合Transformer和CNN的双重优势，实现95%+的检测精度，
+                            有效识别各种大小和形状的肺结节。
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-cube fa-3x text-primary"></i>
+                        </div>
+                        <h5>3D立体分析</h5>
+                        <p class="text-muted">
+                            全方位3D图像分析，提供精确的空间定位信息，
+                            包括结节位置、大小和体积计算。
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-chart-line fa-3x text-primary"></i>
+                        </div>
+                        <h5>智能可视化</h5>
+                        <p class="text-muted">
+                            提供多角度可视化结果，包括原始图像、检测叠加图、
+                            统计分析图表等多种展示方式。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 使用说明 -->
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>使用说明
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-upload me-2"></i>文件格式要求</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>MetaImage格式 (.mhd + .raw)</li>
+                            <li><i class="fas fa-check text-success me-2"></i>NIfTI格式 (.nii, .nii.gz)</li>
+                            <li><i class="fas fa-check text-success me-2"></i>NRRD格式 (.nrrd, .nhdr)</li>
+                            <li><i class="fas fa-check text-success me-2"></i>DICOM格式 (.dcm)</li>
+                            <li><i class="fas fa-check text-success me-2"></i>常规图像 (.png, .jpg)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-lightbulb me-2"></i>使用建议</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>确保图像质量清晰</li>
+                            <li><i class="fas fa-check text-success me-2"></i>推荐使用512×512分辨率</li>
+                            <li><i class="fas fa-check text-success me-2"></i>处理时间约2-5分钟</li>
+                            <li><i class="fas fa-check text-success me-2"></i>支持批量检测</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let currentTaskId = null;
+    let currentFilename = null;
+    
+    // 文件选择预览
+    $('#fileInput').change(function() {
+        const files = this.files;
+        if (files.length > 0) {
+            let fileInfo = '';
+            let totalSize = 0;
+            
+            // 检查是否包含MHD文件
+            let hasMhd = false;
+            let hasRaw = false;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSize = file.size / (1024 * 1024);
+                totalSize += fileSize;
+                
+                if (file.name.endsWith('.mhd')) hasMhd = true;
+                if (file.name.endsWith('.raw')) hasRaw = true;
+                
+                fileInfo += `<strong>文件${i + 1}：</strong> ${file.name} (${fileSize.toFixed(2)} MB)<br>`;
+            }
+            
+            // 如果有MHD文件但没有RAW文件，显示警告
+            if (hasMhd && !hasRaw) {
+                fileInfo += `<div class="alert alert-warning mt-2 mb-0">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <strong>警告：</strong>检测到.mhd文件，但未找到对应的.raw文件！<br>
+                    MHD格式需要同时上传.mhd和.raw两个文件才能正常读取。
+                </div>`;
+            }
+            
+            fileInfo += `<strong>总大小：</strong> ${totalSize.toFixed(2)} MB`;
+            
+            $('#fileInfo').html(fileInfo);
+            $('#filePreview').fadeIn();
+            $('#imagePreviewSection').fadeOut();
+        } else {
+            $('#filePreview').fadeOut();
+        }
+    });
+    
+    // 预览按钮点击
+    $('#previewBtn').click(function() {
+        const fileInput = $('#fileInput')[0];
+        if (!fileInput.files.length) {
+            alert('请先选择一个文件');
+            return;
+        }
+        
+        const formData = new FormData();
+        // 支持多文件上传（MHD格式需要.mhd和.raw两个文件）
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('file', fileInput.files[i]);
+        }
+        
+        // 显示加载状态
+        $('#previewBtn').prop('disabled', true);
+        $('#uploadBtn').prop('disabled', true);
+        $('#uploadProgress').fadeIn();
+        $('#uploadProgress h5').text('正在生成预览图像...');
+        
+        $.ajax({
+            url: '/preview',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                $('#uploadProgress').fadeOut();
+                
+                if (response.success) {
+                    currentTaskId = response.task_id;
+                    currentFilename = response.filename;
+                    
+                    // 显示预览图像
+                    const previewHtml = `
+                        <img src="/visualization/${response.preview_path}" 
+                             class="img-fluid" 
+                             style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+                             alt="图像预览">
+                    `;
+                    $('#imagePreviewContainer').html(previewHtml);
+                    $('#imagePreviewSection').fadeIn();
+                    
+                    // 滚动到预览区域
+                    $('html, body').animate({
+                        scrollTop: $('#imagePreviewSection').offset().top - 100
+                    }, 500);
+                } else {
+                    alert('预览失败：' + response.error);
+                    resetForm();
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#uploadProgress').fadeOut();
+                alert('网络错误，请稍后重试');
+                resetForm();
+            }
+        });
+    });
+    
+    // 继续检测按钮
+    $('#continueDetectionBtn').click(function() {
+        if (!currentTaskId) {
+            alert('请先预览图像');
+            return;
+        }
+        
+        // 重新上传文件进行检测
+        const fileInput = $('#fileInput')[0];
+        if (!fileInput.files.length) {
+            alert('文件丢失，请重新选择');
+            return;
+        }
+        
+        const formData = new FormData();
+        // 支持多文件上传（MHD格式需要.mhd和.raw两个文件）
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('file', fileInput.files[i]);
+        }
+        
+        // 显示进度
+        $('#continueDetectionBtn').prop('disabled', true);
+        $('#uploadProgress h5').text('正在进行智能检测...');
+        $('#uploadProgress').fadeIn();
+        
+        $.ajax({
+            url: '/upload',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    window.location.href = '/results/' + response.task_id;
+                } else {
+                    alert('检测失败：' + response.error);
+                    $('#uploadProgress').fadeOut();
+                    $('#continueDetectionBtn').prop('disabled', false);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('网络错误，请稍后重试');
+                $('#uploadProgress').fadeOut();
+                $('#continueDetectionBtn').prop('disabled', false);
+            }
+        });
+    });
+    
+    // 表单提交（直接检测）
+    $('#uploadForm').submit(function(e) {
+        e.preventDefault();
+        
+        const fileInput = $('#fileInput')[0];
+        if (!fileInput.files.length) {
+            alert('请选择一个文件');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        // 显示上传进度
+        $('#uploadBtn').prop('disabled', true);
+        $('#previewBtn').prop('disabled', true);
+        $('#uploadProgress h5').text('正在处理您的CT图像...');
+        $('#uploadProgress').fadeIn();
+        
+        $.ajax({
+            url: '/upload',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    // 跳转到结果页面
+                    window.location.href = '/results/' + response.task_id;
+                } else {
+                    alert('检测失败：' + response.error);
+                    resetForm();
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('网络错误，请稍后重试');
+                resetForm();
+            }
+        });
+    });
+    
+    function resetForm() {
+        $('#uploadBtn').prop('disabled', false);
+        $('#previewBtn').prop('disabled', false);
+        $('#uploadProgress').fadeOut();
+    }
+});
+</script>
+{% endblock %} 

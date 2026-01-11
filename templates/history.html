@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}历史记录 - TiCNet 肺结节检测系统{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-history me-2"></i>检测历史记录
+                    </h4>
+                    <div>
+                        <button id="selectAllBtn" class="btn btn-sm btn-outline-secondary me-2" style="display:none;">
+                            <i class="fas fa-check-square me-1"></i>全选
+                        </button>
+                        <button id="deleteSelectedBtn" class="btn btn-sm btn-danger me-2" style="display:none;">
+                            <i class="fas fa-trash-alt me-1"></i>删除选中
+                        </button>
+                        <button id="clearAllBtn" class="btn btn-sm btn-danger">
+                            <i class="fas fa-eraser me-1"></i>清空全部
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if history %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="historyTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
+                                <th>文件名</th>
+                                <th>检测时间</th>
+                                <th>检测结果</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in history %}
+                            <tr data-task-id="{{ record.task_id }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input record-checkbox" value="{{ record.task_id }}">
+                                </td>
+                                <td>
+                                    <i class="fas fa-file-medical me-2"></i>
+                                    {{ record.filename }}
+                                </td>
+                                <td>{{ record.timestamp.split('T')[0] }} {{ record.timestamp.split('T')[1].split('.')[0] }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ record.num_detections }} 个结节</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('view_results', task_id=record.task_id) }}" 
+                                       class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="fas fa-eye me-1"></i>查看
+                                    </a>
+                                    <button class="btn btn-sm btn-danger delete-btn" data-task-id="{{ record.task_id }}">
+                                        <i class="fas fa-trash-alt me-1"></i>删除
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">暂无历史记录</h5>
+                    <p class="text-muted">您还没有进行过任何检测</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>开始第一次检测
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 全选/取消全选
+    $('#selectAll').change(function() {
+        $('.record-checkbox').prop('checked', $(this).prop('checked'));
+        updateDeleteButtons();
+    });
+    
+    // 单个复选框变化
+    $('.record-checkbox').change(function() {
+        updateDeleteButtons();
+        
+        // 更新全选框状态
+        const total = $('.record-checkbox').length;
+        const checked = $('.record-checkbox:checked').length;
+        $('#selectAll').prop('checked', total === checked);
+    });
+    
+    // 更新删除按钮显示状态
+    function updateDeleteButtons() {
+        const checkedCount = $('.record-checkbox:checked').length;
+        if (checkedCount > 0) {
+            $('#selectAllBtn').show();
+            $('#deleteSelectedBtn').show().text(`删除选中 (${checkedCount})`);
+        } else {
+            $('#selectAllBtn').hide();
+            $('#deleteSelectedBtn').hide();
+        }
+    }
+    
+    // 删除单个记录
+    $('.delete-btn').click(function() {
+        const taskId = $(this).data('task-id');
+        const row = $(this).closest('tr');
+        const filename = row.find('td:eq(1)').text().trim();
+        
+        if (confirm(`确定要删除 "${filename}" 的检测记录吗？\n\n此操作将删除所有相关文件（结果、报告、图像等），且不可恢复！`)) {
+            deleteRecord(taskId, row);
+        }
+    });
+    
+    // 删除选中记录
+    $('#deleteSelectedBtn').click(function() {
+        const selectedIds = [];
+        $('.record-checkbox:checked').each(function() {
+            selectedIds.push($(this).val());
+        });
+        
+        if (selectedIds.length === 0) return;
+        
+        if (confirm(`确定要删除选中的 ${selectedIds.length} 条记录吗？\n\n此操作将删除所有相关文件，且不可恢复！`)) {
+            deleteBatch(selectedIds);
+        }
+    });
+    
+    // 清空全部
+    $('#clearAllBtn').click(function() {
+        const totalCount = $('.record-checkbox').length;
+        
+        if (totalCount === 0) {
+            alert('没有可清空的记录');
+            return;
+        }
+        
+        if (confirm(`⚠️ 危险操作！\n\n确定要清空全部 ${totalCount} 条检测记录吗？\n\n此操作将永久删除所有检测数据、报告和图像，且不可恢复！`)) {
+            if (confirm('请再次确认：真的要清空所有历史记录吗？')) {
+                clearAll();
+            }
+        }
+    });
+    
+    // 删除单个记录
+    function deleteRecord(taskId, row) {
+        $.ajax({
+            url: `/api/delete/${taskId}`,
+            method: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    // 添加淡出动画
+                    row.fadeOut(300, function() {
+                        $(this).remove();
+                        
+                        // 检查是否还有记录
+                        if ($('#historyTable tbody tr').length === 0) {
+                            location.reload();
+                        }
+                    });
+                    
+                    // 显示成功消息
+                    showMessage('success', '删除成功！');
+                } else {
+                    showMessage('error', '删除失败：' + response.error);
+                }
+            },
+            error: function(xhr) {
+                showMessage('error', '删除失败，请重试');
+            }
+        });
+    }
+    
+    // 批量删除
+    function deleteBatch(taskIds) {
+        const btn = $('#deleteSelectedBtn');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>删除中...');
+        
+        $.ajax({
+            url: '/api/delete_batch',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ task_ids: taskIds }),
+            success: function(response) {
+                if (response.success) {
+                    showMessage('success', response.message);
+                    
+                    // 移除删除的行
+                    taskIds.forEach(function(taskId) {
+                        $(`tr[data-task-id="${taskId}"]`).fadeOut(300, function() {
+                            $(this).remove();
+                            
+                            if ($('#historyTable tbody tr').length === 0) {
+                                location.reload();
+                            }
+                        });
+                    });
+                    
+                    updateDeleteButtons();
+                } else {
+                    showMessage('error', '批量删除失败：' + response.error);
+                }
+                
+                btn.prop('disabled', false).html('<i class="fas fa-trash-alt me-1"></i>删除选中');
+            },
+            error: function(xhr) {
+                showMessage('error', '批量删除失败，请重试');
+                btn.prop('disabled', false).html('<i class="fas fa-trash-alt me-1"></i>删除选中');
+            }
+        });
+    }
+    
+    // 清空全部
+    function clearAll() {
+        const btn = $('#clearAllBtn');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>清空中...');
+        
+        $.ajax({
+            url: '/api/clear_all',
+            method: 'POST',
+            success: function(response) {
+                if (response.success) {
+                    showMessage('success', response.message);
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showMessage('error', '清空失败：' + response.error);
+                    btn.prop('disabled', false).html('<i class="fas fa-eraser me-1"></i>清空全部');
+                }
+            },
+            error: function(xhr) {
+                showMessage('error', '清空失败，请重试');
+                btn.prop('disabled', false).html('<i class="fas fa-eraser me-1"></i>清空全部');
+            }
+        });
+    }
+    
+    // 显示消息
+    function showMessage(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+        
+        const alert = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                <i class="fas fa-${icon} me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `);
+        
+        $('body').append(alert);
+        
+        setTimeout(function() {
+            alert.fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 3000);
+    }
+});
+</script>
+{% endblock %} 

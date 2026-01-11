@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}检测结果 - TiCNet 肺结节检测系统{% endblock %}
+
+{% block content %}
+<!-- 结果概览 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>检测完成
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">{{ results.filename }}</h5>
+                        <p class="text-muted mb-1">
+                            <i class="fas fa-clock me-1"></i>
+                            检测时间：{{ results.timestamp.split('T')[0] }} {{ results.timestamp.split('T')[1].split('.')[0] }}
+                        </p>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-stopwatch me-1"></i>
+                            处理耗时：{{ "%.2f"|format(results.inference_time if results.inference_time else 0) }} 秒
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="{{ url_for('view_report', task_id=results.task_id) }}" class="btn btn-primary btn-lg me-2" target="_blank">
+                            <i class="fas fa-file-medical-alt me-1"></i>查看完整报告
+                        </a>
+                        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-history me-1"></i>历史记录
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-upload me-1"></i>新检测
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 统计信息 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-item">
+            <div class="stat-number text-primary">{{ results.statistics.total_detections }}</div>
+            <div class="stat-label">检测结节总数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-item">
+            <div class="stat-number text-success">{{ results.statistics.high_confidence_count }}</div>
+            <div class="stat-label">高置信度结节</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-item">
+            <div class="stat-number text-warning">{{ results.statistics.medium_confidence_count }}</div>
+            <div class="stat-label">中等置信度结节</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-item">
+            <div class="stat-number text-info">{{ "%.3f"|format(results.statistics.average_confidence) }}</div>
+            <div class="stat-label">平均置信度</div>
+        </div>
+    </div>
+</div>
+
+<!-- 结果验证 -->
+{% if results.validation and results.validation.has_ground_truth %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>检测结果验证
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number text-success">{{ results.validation.true_positives }}</div>
+                            <div class="stat-label">正确检测</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number text-danger">{{ results.validation.false_positives }}</div>
+                            <div class="stat-label">误报</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number text-warning">{{ results.validation.false_negatives }}</div>
+                            <div class="stat-label">漏检</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number text-primary">{{ "%.3f"|format(results.validation.f1_score) }}</div>
+                            <div class="stat-label">F1分数</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>精度：</strong>{{ "%.1f"|format(results.validation.precision * 100) }}%
+                    </div>
+                    <div class="col-md-4">
+                        <strong>召回率：</strong>{{ "%.1f"|format(results.validation.recall * 100) }}%
+                    </div>
+                    <div class="col-md-4">
+                        <strong>平均IoU：</strong>{{ "%.3f"|format(results.validation.average_iou) }}
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <strong>验证总结：</strong>{{ results.validation.validation_summary }}
+                </div>
+                
+                {% if results.visualization_paths.validation %}
+                <div class="text-center mt-3">
+                    <h6><i class="fas fa-balance-scale me-2"></i>检测结果对比分析</h6>
+                    <img src="{{ url_for('serve_visualization', filename=results.visualization_paths.validation) }}" 
+                         class="image-preview" alt="检测结果验证对比">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 可视化结果 -->
+{% if results.visualization_paths %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-images me-2"></i>可视化结果
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if results.visualization_paths.summary %}
+                    <div class="col-12 mb-4">
+                        <h6><i class="fas fa-chart-bar me-2"></i>检测结果汇总</h6>
+                        <div class="text-center">
+                            <img src="{{ url_for('serve_visualization', filename=results.visualization_paths.summary) }}" 
+                                 class="image-preview" alt="检测结果汇总">
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if results.visualization_paths.overlay %}
+                    <div class="col-md-6 mb-4">
+                        <h6><i class="fas fa-layer-group me-2"></i>叠加可视化</h6>
+                        <div class="text-center">
+                            <img src="{{ url_for('serve_visualization', filename=results.visualization_paths.overlay) }}" 
+                                 class="image-preview" alt="叠加可视化">
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if results.visualization_paths.original_slices %}
+                    <div class="col-md-6 mb-4">
+                        <h6><i class="fas fa-images me-2"></i>原始切片</h6>
+                        <div class="text-center">
+                            <img src="{{ url_for('serve_visualization', filename=results.visualization_paths.original_slices) }}" 
+                                 class="image-preview" alt="原始切片">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>可视化图像生成失败</strong> - 请检查图像文件格式是否正确，或查看系统日志获取详细错误信息。
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 详细检测结果 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>详细检测结果
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if results.detections %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>置信度</th>
+                                <th>位置 (X, Y, Z)</th>
+                                <th>大小 (W×H×D)</th>
+                                <th>体积 (mm³)</th>
+                                <th>风险等级</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detection in results.detections %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <span class="fw-bold">{{ "%.3f"|format(detection.confidence) }}</span>
+                                    <div class="progress mt-1" style="height: 5px;">
+                                        <div class="progress-bar 
+                                             {% if detection.confidence >= 0.7 %}bg-success
+                                             {% elif detection.confidence >= 0.4 %}bg-warning
+                                             {% else %}bg-danger{% endif %}" 
+                                             style="width: {{ (detection.confidence * 100)|round }}%"></div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        ({{ "%.0f"|format(detection.bbox[0]) }}, 
+                                         {{ "%.0f"|format(detection.bbox[1]) }}, 
+                                         {{ "%.0f"|format(detection.bbox[2]) }})
+                                    </small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ "%.0f"|format(detection.bbox[3] - detection.bbox[0]) }}×{{ "%.0f"|format(detection.bbox[4] - detection.bbox[1]) }}×{{ "%.0f"|format(detection.bbox[5] - detection.bbox[2]) }}
+                                    </small>
+                                </td>
+                                <td>{{ "%.1f"|format(detection.volume) }}</td>
+                                <td>
+                                    {% if detection.confidence >= 0.7 %}
+                                        <span class="detection-badge badge-high">高风险</span>
+                                    {% elif detection.confidence >= 0.4 %}
+                                        <span class="detection-badge badge-medium">中等风险</span>
+                                    {% else %}
+                                        <span class="detection-badge badge-low">低风险</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">未检测到肺结节</h5>
+                    <p class="text-muted">该CT图像中未发现明显的肺结节征象</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 额外信息 -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>图像信息
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>图像尺寸:</strong></td>
+                        <td>{{ results.statistics.image_shape[0] }}×{{ results.statistics.image_shape[1] }}×{{ results.statistics.image_shape[2] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>像素间距:</strong></td>
+                        <td>{{ "%.2f"|format(results.statistics.spacing[0]) }}×{{ "%.2f"|format(results.statistics.spacing[1]) }}×{{ "%.2f"|format(results.statistics.spacing[2]) }} mm</td>
+                    </tr>
+                    <tr>
+                        <td><strong>检测算法:</strong></td>
+                        <td>TiCNet (Transformer + CNN)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>统计分析
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>总体积:</strong></td>
+                        <td>{{ "%.1f"|format(results.statistics.total_volume) }} mm³</td>
+                    </tr>
+                    <tr>
+                        <td><strong>平均体积:</strong></td>
+                        <td>{{ "%.1f"|format(results.statistics.average_volume) }} mm³</td>
+                    </tr>
+                    <tr>
+                        <td><strong>置信度阈值:</strong></td>
+                        <td>0.70</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 医学建议 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-user-md me-2"></i>医学建议</h6>
+            <ul class="mb-0">
+                <li><strong>本系统仅供辅助诊断使用</strong>，不能替代专业医生的临床判断</li>
+                <li>对于高置信度检测结果，建议进一步进行专业影像学检查</li>
+                <li>建议结合患者病史、临床症状等综合评估</li>
+                <li>如有疑问，请及时咨询专业医生</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 添加动画效果
+    $('.card').addClass('fade-in');
+    
+    // 图像点击放大
+    $('.image-preview').click(function() {
+        const src = $(this).attr('src');
+        const modal = `
+            <div class="modal fade" id="imageModal" tabindex="-1">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">图像预览</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="${src}" class="img-fluid" alt="放大图像">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 移除已存在的模态框
+        $('#imageModal').remove();
+        
+        // 添加新的模态框
+        $('body').append(modal);
+        $('#imageModal').modal('show');
+    });
+    
+    // 工具提示
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %} 
